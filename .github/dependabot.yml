@@ -1,0 +1,20 @@
+version: 2
+updates:
+  # A week's cooldown: most malicious releases are caught and pulled within days.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    ignore:
+      # DuckDB 2.0.0 returned wrong results after a bulk insert (nyc-taxi-pipeline); stay on 1.x.
+      - dependency-name: duckdb
+        versions: [">=2"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
