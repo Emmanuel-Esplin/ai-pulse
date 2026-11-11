@@ -1,0 +1,33 @@
+version: 2
+
+models:
+  - name: stg_hn_stories
+    columns:
+      - name: story_id
+        data_tests: [unique, not_null]
+      - name: created_at
+        data_tests: [not_null]
+      - name: story_kind
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [ask, show, launch, link]
+  - name: stg_hn_comments
+    columns:
+      - name: comment_id
+        data_tests: [unique, not_null]
+      - name: story_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_hn_stories')
+                field: story_id
+  - name: mart_hn_daily
+    columns:
+      - name: created_date
+        data_tests: [unique, not_null]
+      - name: stories
+        data_tests:
+          - expression_true:
+              arguments:
+                expression: "stories > 0"

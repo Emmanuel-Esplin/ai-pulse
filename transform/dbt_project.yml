@@ -1,0 +1,20 @@
+name: ai_pulse
+version: "1.0.0"
+config-version: 2
+profile: ai_pulse
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+
+# Gold layer of the medallion: staging views over silver Parquet, then marts.
+# SQL avoids QUALIFY, arg_max and any_value so it can run on Athena later too.
+models:
+  ai_pulse:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table
+
+vars:
+  silver_dir: "{{ env_var('AIPULSE_DATA_DIR', '../data') }}/silver"
