@@ -30,7 +30,7 @@ def test_busy_windows_are_split_until_each_fits(monkeypatch):
 def test_days_to_fetch_skips_stored_days_but_refreshes_recent_ones():
     today = date(2025, 11, 12)
     have = {date(2025, 11, 9), date(2025, 11, 10), date(2025, 11, 12)}
-    days = hackernews.days_to_fetch(today, backfill_days=4, have=have)
+    days = landing.days_to_fetch(today, backfill_days=4, have=have, settle_days=2)
     # 11-08 is missing; 11-10 to 11-12 are within the settle window.
     assert days == [date(2025, 11, 8), date(2025, 11, 10), date(2025, 11, 11), date(2025, 11, 12)]
 
@@ -38,7 +38,10 @@ def test_days_to_fetch_skips_stored_days_but_refreshes_recent_ones():
 def test_ingest_writes_one_bronze_file_per_day(data_dir):
     written = hackernews.ingest_stories(fake_hn.client(), DAY, backfill_days=1)
     assert written == 2
-    assert hackernews.stored_days() == {date(2025, 11, 9), DAY}
+    assert landing.stored_days("hackernews", "stories", "created_date") == {
+        date(2025, 11, 9),
+        DAY,
+    }
     path = landing.bronze_path("hackernews", "stories", created_date=DAY.isoformat())
     envelope = landing.read_envelope(path)
     assert envelope["source_url"] == hackernews.ALGOLIA_URL
@@ -60,7 +63,9 @@ def test_run_defaults_to_every_source(monkeypatch):
     from ingestion import run
 
     seen = []
-    monkeypatch.setattr(hackernews, "ingest_stories", lambda *a: seen.append("stories"))
-    monkeypatch.setattr(hackernews, "ingest_front_page", lambda *a: seen.append("front"))
+    monkeypatch.setattr(hackernews, "ingest_stories", lambda *a: seen.append("hn stories"))
+    monkeypatch.setattr(hackernews, "ingest_front_page", lambda *a: seen.append("hn front"))
+    monkeypatch.setattr(run.huggingface, "ingest_models", lambda *a: seen.append("hf"))
+    monkeypatch.setattr(run.arxiv, "ingest_papers", lambda *a: seen.append("arxiv"))
     run.main([])
-    assert seen == ["stories", "front"]
+    assert seen == ["hn stories", "hn front", "hf", "arxiv"]

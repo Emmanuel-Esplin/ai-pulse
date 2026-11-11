@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import UTC, datetime
+import re
+from datetime import UTC, date, datetime, timedelta
 from functools import cache
 from pathlib import Path
 from typing import Any
@@ -111,3 +112,21 @@ def read_bronze(path: str) -> Any:
 def silver_path(source: str, table: str) -> str:
     """One Parquet file per silver table, e.g. silver/hackernews/stories.parquet."""
     return store().path("silver", source, f"{table}.parquet")
+
+
+def stored_days(source: str, endpoint: str, partition: str) -> set[date]:
+    """Dates of the bronze files under source/endpoint, read from their `partition=` key."""
+    folder = store().path("bronze", source, endpoint)
+    pattern = re.compile(rf"{partition}=(\d{{4}}-\d{{2}}-\d{{2}})")
+    return {
+        date.fromisoformat(m.group(1))
+        for path in store().list_files(folder, ".json")
+        if (m := pattern.search(path))
+    }
+
+
+def days_to_fetch(today: date, backfill_days: int, have: set[date], settle_days: int) -> list[date]:
+    """Days missing from bronze, plus the last `settle_days` whose source data may still move."""
+    window = [today - timedelta(days=n) for n in range(backfill_days, -1, -1)]
+    recent = {today - timedelta(days=n) for n in range(settle_days + 1)}
+    return [d for d in window if d not in have or d in recent]

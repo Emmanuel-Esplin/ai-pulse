@@ -1,0 +1,125 @@
+technology_id,alias,case_sensitive
+gpt,gpt,false
+chatgpt,chatgpt,false
+claude,claude,false
+gemini,gemini,false
+gemma,gemma,false
+llama,llama,false
+mistral,mistral,false
+mistral,mixtral,false
+mistral,codestral,false
+mistral,devstral,false
+qwen,qwen,false
+qwen,qwq,false
+deepseek,deepseek,false
+phi,phi-2,false
+phi,phi-3,false
+phi,phi-3.5,false
+phi,phi-4,false
+grok,grok,false
+kimi,kimi,false
+glm,glm-4,false
+glm,glm-4.5,false
+glm,glm-4.6,false
+glm,glm-5,false
+glm,chatglm,false
+olmo,olmo,false
+nemotron,nemotron,false
+minimax,minimax-m1,false
+minimax,minimax-m2,false
+minimax,minimax-text,false
+stable_diffusion,stable diffusion,false
+stable_diffusion,stable-diffusion,false
+stable_diffusion,sdxl,false
+flux,flux.1,false
+flux,flux.2,false
+whisper,whisper,false
+bert,bert,false
+bert,roberta,false
+bert,modernbert,false
+clip,CLIP,true
+sam,segment anything,false
+sam,segment-anything,false
+sam,sam2,false
+sam,sam-2,false
+sora,sora,false
+openai,openai,false
+anthropic,anthropic,false
+deepmind,deepmind,false
+xai,xAI,true
+nvidia,nvidia,false
+hugging_face,hugging face,false
+hugging_face,huggingface,false
+pytorch,pytorch,false
+tensorflow,tensorflow,false
+jax,jax,false
+mlx,mlx,false
+vllm,vllm,false
+sglang,sglang,false
+llama_cpp,llama.cpp,false
+ollama,ollama,false
+langchain,langchain,false
+langchain,langgraph,false
+llamaindex,llamaindex,false
+llamaindex,llama_index,false
+dspy,dspy,false
+unsloth,unsloth,false
+onnx,onnx,false
+cuda,cuda,false
+gguf,gguf,false
+copilot,copilot,false
+cursor,Cursor,true
+claude_code,claude code,false
+codex,codex,false
+rag,RAG,true
+rag,retrieval-augmented generation,false
+rag,retrieval augmented generation,false
+agents,ai agent,false
+agents,ai agents,false
+agents,llm agent,false
+agents,llm agents,false
+agents,agentic,false
+agents,coding agent,false
+agents,coding agents,false
+mcp,MCP,true
+mcp,model context protocol,false
+fine_tuning,fine-tuning,false
+fine_tuning,fine tuning,false
+fine_tuning,finetuning,false
+fine_tuning,fine-tune,false
+fine_tuning,fine-tuned,false
+lora,LoRA,true
+lora,QLoRA,true
+rlhf,rlhf,false
+rlhf,reinforcement learning from human feedback,false
+grpo,grpo,false
+dpo,DPO,true
+dpo,direct preference optimization,false
+moe,MoE,true
+moe,mixture of experts,false
+moe,mixture-of-experts,false
+quantization,quantization,false
+quantization,quantized,false
+distillation,distillation,false
+distillation,distilled,false
+speculative_decoding,speculative decoding,false
+reasoning_models,reasoning model,false
+reasoning_models,reasoning models,false
+diffusion_models,diffusion model,false
+diffusion_models,diffusion models,false
+vector_database,vector database,false
+vector_database,vector databases,false
+vector_database,vector db,false
+multimodal,multimodal,false
+multimodal,multi-modal,false
+multimodal,vision-language,false
+embeddings,embedding model,false
+embeddings,embedding models,false
+embeddings,embeddings,false
+h100,h100,false
+h100,h200,false
+blackwell,blackwell,false
+blackwell,b200,false
+blackwell,gb200,false
+tpu,tpu,false
+tpu,tpus,false
