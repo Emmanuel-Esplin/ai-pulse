@@ -75,6 +75,39 @@ models:
       - name: technology_id
         data_tests: [unique, not_null]
 
+  - name: stg_llm_hn_mentions
+    columns:
+      - name: sentiment
+        data_tests:
+          - accepted_values: {arguments: {values: [positive, neutral, negative, mixed]}}
+      - name: story_id
+        data_tests:
+          - relationships: {arguments: {to: ref('stg_hn_stories'), field: story_id}}
+  - name: stg_llm_arxiv_digest
+    columns:
+      - name: arxiv_id
+        data_tests:
+          - unique
+          - relationships: {arguments: {to: ref('stg_arxiv_papers'), field: arxiv_id}}
+      - name: summary
+        data_tests: [not_null]
+  - name: int_hn_story_technologies_llm
+    columns:
+      - name: technology_id
+        data_tests:
+          - relationships: {arguments: {to: ref('dim_technology'), field: technology_id}}
+  - name: mart_extraction_comparison
+    columns:
+      - name: technology_id
+        data_tests: [unique]
+  - name: mart_emerging_terms
+    columns:
+      - name: term
+        data_tests: [unique, not_null]
+  - name: mart_llm_usage
+    data_tests:
+      - unique_combination: {arguments: {columns: [answered_date, task, model]}}
+
 seeds:
   - name: technologies
     description: >
@@ -94,3 +127,10 @@ seeds:
       - name: technology_id
         data_tests:
           - relationships: {arguments: {to: ref('technologies'), field: technology_id}}
+  - name: llm_prices
+    description: >
+      Claude API list prices in USD per million tokens (standard, not batch). Update when
+      prices change; mart_llm_usage applies the batch discount.
+    columns:
+      - name: model
+        data_tests: [unique, not_null]

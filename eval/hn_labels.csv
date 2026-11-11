@@ -1,0 +1,51 @@
+story_id,expected,note
+49646988,anthropic,
+49727041,chatgpt;openai;agents,"""Sponsored Agents"" are AI agents"
+49550769,codex,
+50319358,anthropic,
+49684266,anthropic;claude_code,Claude Code is the product; it does not imply the Claude model family
+50003107,openai,
+49851355,openai,
+49538007,gemini,
+49722276,agents,coding agent
+49856665,openai,
+50321522,mcp;claude,in the text: connect your AI with MCP; let Claude build it
+49822654,openai;agents,
+49972125,multimodal,in the text: multimodal inputs; also Stable Audio and ElevenLabs (outside the taxonomy)
+49740330,gemini,
+49723408,mistral,
+49613033,openai,
+50156189,deepseek,
+50392256,nvidia,
+49443523,agents,agentic
+49562219,copilot;embeddings,in the text: asks Copilot; says it does not use embeddings
+49697014,claude;ollama,Opus is a Claude model
+49374772,claude,
+49671274,openai,
+49932606,claude,
+49923692,fine_tuning,
+50328462,,
+50280864,,ICE agents are people
+50372360,,the title alone does not say what it is about
+49630194,,
+49714157,,"""search-and-inference database"" is too vague to label"
+49866031,,
+49399941,,AI in general; no specific technology
+49791939,,
+50311686,,
+49883970,,
+49523931,,
+50159562,,
+49482833,,
+49356115,,
+49481018,,X Corp is not xAI
+49353432,,AI in general
+50325454,,JEPA is outside the taxonomy
+50050370,,
+49454460,,
+49534573,,
+50358422,,AI in general
+49303592,,
+49956035,,
+50184577,,
+49305250,,

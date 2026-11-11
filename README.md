@@ -5,8 +5,8 @@ about), **Hugging Face** (which open models people download) and **arXiv** (what
 publish). They share one data model, so a technology like "Llama" or "vLLM" can be followed
 across all three, week by week.
 
-> Status: phase 2 of 7. All three sources run from bronze to gold, with rule-based
-> technology matching. LLM enrichment comes next.
+> Status: phase 3 of 7. All three sources run from bronze to gold; Claude adds technology
+> mentions with sentiment for Hacker News and plain-English digests for arXiv papers.
 
 ## Medallion architecture
 
@@ -22,8 +22,8 @@ across all three, week by week.
               ▼
  ┌──────────────────────────────────────────────────────────────────┐
  │ SILVER  data/silver/<source>/<table>.parquet                     │
- │         + enrichment: tech mentions, sentiment, summaries,       │
- │           embeddings (Claude API, local MiniLM)  [phases 3-4]    │
+ │         + llm/: Claude's mentions, sentiment and paper digests   │
+ │           (parsed from bronze/llm, Claude's raw responses)       │
  └──────────────────────────────────────────────────────────────────┘
               │  dbt (transform/)
               ▼
@@ -39,6 +39,23 @@ across all three, week by week.
 Each Make target is one hop: `make ingest` (sources to bronze), `make silver`, `make gold`.
 Bronze is never edited, so silver and gold can always be rebuilt from it.
 
+## Claude enrichment
+
+Claude is treated as one more source. Items come from silver; the Message Batches API
+(half price) answers them with structured outputs that must follow a JSON schema; the raw
+responses land in `bronze/llm/` like any other API's, and silver parses them.
+
+- **Hacker News** (`hn_technologies`): every AI technology a post refers to, the sentiment
+  towards each, and whether it is the main subject. Names outside the taxonomy come back as
+  `other` and feed `mart_emerging_terms`.
+- **arXiv** (`arxiv_digest`): a two-to-three sentence plain-English summary, the paper's
+  contribution type, its technologies, and new terms it introduces.
+
+Bronze doubles as the cache: an item with a successful answer for the current prompt
+version is never sent again. `make enrich-plan` shows what would be sent and its estimated
+cost without sending anything; `mart_llm_usage` reports actual spend from the API's token
+counts. Rules and Claude are scored against hand labels in [docs/eval.md](docs/eval.md).
+
 ## Quick start
 
 ```bash
@@ -46,6 +63,8 @@ make install   # venv and data folders (kept out of iCloud via .nosync)
 make test      # no network: tests use an invented Hacker News
 make ingest    # first run backfills 90 days: HN ~4 min (~90k stories), arXiv ~10 min
 make gold      # silver, then dbt build on DuckDB
+make enrich-plan               # what Claude enrichment would send and cost (free)
+make enrich TARGET=hn LIMIT=500   # billed; needs ANTHROPIC_API_KEY
 ```
 
 ## Sources
@@ -76,7 +95,7 @@ Raw data stays out of the repo (`data/` is git-ignored).
 
 1. Scaffold and Hacker News, bronze to gold ✅
 2. Hugging Face and arXiv ingestion; technology taxonomy and rule-based matching ✅
-3. LLM enrichment: tech mentions and sentiment, paper summaries (Claude API, batched and cached)
+3. LLM enrichment: tech mentions and sentiment, paper digests (Claude API, batched and cached) ✅
 4. Embeddings and semantic search over papers (MiniLM + DuckDB vss)
 5. Gold trend marts: rising and falling technologies across sources
 6. Dashboard and weekly "what's hot in open AI" digest

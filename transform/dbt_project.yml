@@ -24,6 +24,8 @@ seeds:
       +column_types: {technology_id: varchar, name: varchar, category: varchar, match_hf: boolean}
     technology_aliases:
       +column_types: {technology_id: varchar, alias: varchar, case_sensitive: boolean}
+    llm_prices:
+      +column_types: {model: varchar}
 
 vars:
   silver_dir: "{{ env_var('AIPULSE_DATA_DIR', '../data') }}/silver"
