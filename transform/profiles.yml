@@ -1,0 +1,8 @@
+# No secrets here. An Athena target joins when the project moves to AWS.
+ai_pulse:
+  target: local
+  outputs:
+    local:
+      type: duckdb
+      path: "{{ env_var('AIPULSE_DATA_DIR', '../data') }}/gold/warehouse.duckdb"
+      threads: 4
