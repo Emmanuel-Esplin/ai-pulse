@@ -31,3 +31,66 @@ models:
           - expression_true:
               arguments:
                 expression: "stories > 0"
+  - name: stg_hf_model_snapshots
+    data_tests:
+      - unique_combination: {arguments: {columns: [snapshot_date, model_id]}}
+    columns:
+      - name: model_id
+        data_tests: [not_null]
+      - name: base_relation
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [finetune, quantized, adapter, merge]
+  - name: stg_arxiv_papers
+    columns:
+      - name: arxiv_id
+        data_tests: [unique, not_null]
+      - name: title
+        data_tests: [not_null]
+  - name: int_hn_story_technologies
+    data_tests:
+      - unique_combination: {arguments: {columns: [document_id, technology_id]}}
+    columns:
+      - name: technology_id
+        data_tests:
+          - relationships: {arguments: {to: ref('dim_technology'), field: technology_id}}
+  - name: int_arxiv_paper_technologies
+    data_tests:
+      - unique_combination: {arguments: {columns: [document_id, technology_id]}}
+  - name: int_hf_model_technologies
+    data_tests:
+      - unique_combination: {arguments: {columns: [document_id, technology_id]}}
+  - name: dim_technology
+    columns:
+      - name: technology_id
+        data_tests: [unique, not_null]
+      - name: category
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [model_family, product, lab, framework, technique, hardware]
+  - name: mart_technology_coverage
+    columns:
+      - name: technology_id
+        data_tests: [unique, not_null]
+
+seeds:
+  - name: technologies
+    description: >
+      The technology taxonomy shared by every source. match_hf marks the ones that are model
+      names, so Hugging Face models are only matched against those.
+    columns:
+      - name: technology_id
+        data_tests: [unique, not_null]
+  - name: technology_aliases
+    description: >
+      Words that count as a mention. case_sensitive aliases (RAG, MoE, LoRA, MCP) are ordinary
+      words or other things in lower case. Ambiguous names are only listed in specific forms
+      ("phi-4", not "phi"; "flux.1", not "flux").
+    data_tests:
+      - unique_combination: {arguments: {columns: [technology_id, alias]}}
+    columns:
+      - name: technology_id
+        data_tests:
+          - relationships: {arguments: {to: ref('technologies'), field: technology_id}}

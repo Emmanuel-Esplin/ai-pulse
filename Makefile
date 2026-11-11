@@ -33,8 +33,8 @@ format:
 test:
 	$(PYTHON) -m pytest -q
 
-# Bronze. The first run backfills 90 days of Hacker News (about 2 minutes); later runs
-# fetch only new days and the last two, whose scores may still change.
+# Bronze. The first run backfills 90 days of Hacker News and arXiv; later runs
+# fetch only new days and the last few, which may still change. Hugging Face: today only.
 ingest:
 	$(PYTHON) -m ingestion.run
 

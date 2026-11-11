@@ -11,20 +11,18 @@ Two official read-only APIs, no key needed:
 from __future__ import annotations
 
 import logging
-import re
 from concurrent.futures import ThreadPoolExecutor
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 from typing import Any
 
 import httpx
-from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from ingestion import landing
+from ingestion.http import get_json
 
 SOURCE = "hackernews"
 ALGOLIA_URL = "https://hn.algolia.com/api/v1/search_by_date"
 FIREBASE_URL = "https://hacker-news.firebaseio.com/v0"
-USER_AGENT = "ai-pulse/0.1 (+https://github.com/Emmanuel-Esplin/ai-pulse)"
 
 # Algolia returns at most 1,000 hits per query, so busy windows are split until they fit.
 ALGOLIA_PAGE = 1000
@@ -34,34 +32,6 @@ FRONT_PAGE_STORIES = 30
 COMMENTS_PER_STORY = 5
 
 log = logging.getLogger(__name__)
-
-
-def _retryable(exc: BaseException) -> bool:
-    if isinstance(exc, httpx.TransportError):
-        return True
-    return isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code in (
-        429,
-        500,
-        502,
-        503,
-        504,
-    )
-
-
-@retry(
-    retry=retry_if_exception(_retryable),
-    wait=wait_exponential(multiplier=2, max=30),
-    stop=stop_after_attempt(4),
-    reraise=True,
-)
-def _get_json(client: httpx.Client, url: str, params: dict[str, Any] | None = None) -> Any:
-    response = client.get(url, params=params)
-    response.raise_for_status()
-    return response.json()
-
-
-def make_client() -> httpx.Client:
-    return httpx.Client(timeout=30, headers={"User-Agent": USER_AGENT})
 
 
 # --- Algolia: stories by day -------------------------------------------------------------
@@ -74,7 +44,7 @@ def fetch_window(client: httpx.Client, start: int, end: int) -> list[dict[str, A
         "numericFilters": f"created_at_i>={start},created_at_i<{end}",
         "hitsPerPage": ALGOLIA_PAGE,
     }
-    body = _get_json(client, ALGOLIA_URL, params)
+    body = get_json(client, ALGOLIA_URL, params)
     if body["nbHits"] <= ALGOLIA_PAGE or end - start <= 60:
         if body["nbHits"] > ALGOLIA_PAGE:
             log.warning(
@@ -92,26 +62,11 @@ def fetch_day(client: httpx.Client, day: date) -> list[dict[str, Any]]:
     return sorted(hits, key=lambda h: (h["created_at_i"], h["objectID"]))
 
 
-def days_to_fetch(today: date, backfill_days: int, have: set[date]) -> list[date]:
-    """Days missing from bronze, plus the last SETTLE_DAYS whose scores may still move."""
-    window = [today - timedelta(days=n) for n in range(backfill_days, -1, -1)]
-    recent = {today - timedelta(days=n) for n in range(SETTLE_DAYS + 1)}
-    return [d for d in window if d not in have or d in recent]
-
-
-def stored_days() -> set[date]:
-    folder = landing.store().path("bronze", SOURCE, "stories")
-    found = set()
-    for path in landing.store().list_files(folder, ".json"):
-        match = re.search(r"created_date=(\d{4}-\d{2}-\d{2})", path)
-        if match:
-            found.add(date.fromisoformat(match.group(1)))
-    return found
-
-
 def ingest_stories(client: httpx.Client, today: date, backfill_days: int) -> int:
     """Write one bronze file per day; returns how many days were written."""
-    days = days_to_fetch(today, backfill_days, stored_days())
+    days = landing.days_to_fetch(
+        today, backfill_days, landing.stored_days(SOURCE, "stories", "created_date"), SETTLE_DAYS
+    )
     for day in days:
         hits = fetch_day(client, day)
         path = landing.bronze_path(SOURCE, "stories", created_date=day.isoformat())
@@ -124,12 +79,12 @@ def ingest_stories(client: httpx.Client, today: date, backfill_days: int) -> int
 
 
 def fetch_item(client: httpx.Client, item_id: int) -> dict[str, Any] | None:
-    return _get_json(client, f"{FIREBASE_URL}/item/{item_id}.json")
+    return get_json(client, f"{FIREBASE_URL}/item/{item_id}.json")
 
 
 def fetch_front_page(client: httpx.Client) -> list[dict[str, Any]]:
     """Top stories, each with its first few live top-level comments under `comments`."""
-    ids = _get_json(client, f"{FIREBASE_URL}/topstories.json")[:FRONT_PAGE_STORIES]
+    ids = get_json(client, f"{FIREBASE_URL}/topstories.json")[:FRONT_PAGE_STORIES]
     with ThreadPoolExecutor(max_workers=8) as pool:
         stories = [s for s in pool.map(lambda i: fetch_item(client, i), ids) if s]
         for story in stories:

@@ -1,0 +1,69 @@
+technology_id,name,category,match_hf
+gpt,GPT,model_family,true
+chatgpt,ChatGPT,product,false
+claude,Claude,model_family,false
+gemini,Gemini,model_family,false
+gemma,Gemma,model_family,true
+llama,Llama,model_family,true
+mistral,Mistral,model_family,true
+qwen,Qwen,model_family,true
+deepseek,DeepSeek,model_family,true
+phi,Phi,model_family,true
+grok,Grok,model_family,true
+kimi,Kimi,model_family,true
+glm,GLM,model_family,true
+olmo,OLMo,model_family,true
+nemotron,Nemotron,model_family,true
+minimax,MiniMax,model_family,true
+stable_diffusion,Stable Diffusion,model_family,true
+flux,FLUX,model_family,true
+whisper,Whisper,model_family,true
+bert,BERT,model_family,true
+clip,CLIP,model_family,true
+sam,Segment Anything,model_family,true
+sora,Sora,model_family,false
+openai,OpenAI,lab,false
+anthropic,Anthropic,lab,false
+deepmind,Google DeepMind,lab,false
+xai,xAI,lab,false
+nvidia,NVIDIA,lab,false
+hugging_face,Hugging Face,lab,false
+pytorch,PyTorch,framework,false
+tensorflow,TensorFlow,framework,false
+jax,JAX,framework,false
+mlx,MLX,framework,true
+vllm,vLLM,framework,false
+sglang,SGLang,framework,false
+llama_cpp,llama.cpp,framework,false
+ollama,Ollama,framework,false
+langchain,LangChain,framework,false
+llamaindex,LlamaIndex,framework,false
+dspy,DSPy,framework,false
+unsloth,Unsloth,framework,true
+onnx,ONNX,framework,true
+cuda,CUDA,framework,false
+gguf,GGUF,framework,true
+copilot,GitHub Copilot,product,false
+cursor,Cursor,product,false
+claude_code,Claude Code,product,false
+codex,Codex,product,false
+rag,Retrieval-augmented generation,technique,false
+agents,AI agents,technique,false
+mcp,Model Context Protocol,technique,false
+fine_tuning,Fine-tuning,technique,false
+lora,LoRA,technique,false
+rlhf,RLHF,technique,false
+grpo,GRPO,technique,false
+dpo,DPO,technique,false
+moe,Mixture of experts,technique,false
+quantization,Quantization,technique,false
+distillation,Distillation,technique,false
+speculative_decoding,Speculative decoding,technique,false
+reasoning_models,Reasoning models,technique,false
+diffusion_models,Diffusion models,technique,false
+vector_database,Vector databases,technique,false
+multimodal,Multimodal models,technique,false
+embeddings,Embeddings,technique,false
+h100,NVIDIA H100,hardware,false
+blackwell,NVIDIA Blackwell,hardware,false
+tpu,TPU,hardware,false
