@@ -41,7 +41,7 @@ Bronze is never edited, so silver and gold can always be rebuilt from it.
 
 ## Claude enrichment
 
-Claude is treated as one more source. Items come from silver; the Message Batches API
+Claude (or any model on Amazon Bedrock: `--provider bedrock`) is treated as one more source. Items come from silver; the Message Batches API
 (half price) answers them with structured outputs that must follow a JSON schema; the raw
 responses land in `bronze/llm/` like any other API's, and silver parses them.
 

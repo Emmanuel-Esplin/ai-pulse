@@ -24,10 +24,26 @@ person; edit the CSV and rerun `make eval`.
 `make eval` scores only stories both methods covered. Micro-averaged over (story, technology)
 pairs.
 
-| method | precision | recall | F1 | sample |
-|---|---|---|---|---|
-| rules | 0.97 | 0.91 | 0.94 | all 50 labelled stories |
-| Claude | pending | pending | pending | after the first enrichment run |
+| method | prompt | precision | recall | F1 | sample |
+|---|---|---|---|---|---|
+| rules | | 0.97 | 0.91 | 0.94 | all 50 labelled stories |
+| Qwen3 32B (Bedrock) | v1 | 0.84 | 0.84 | 0.84 | 50 |
+| gpt-oss-120b (Bedrock) | v1 | n/a | | | 24 of 50 answers missed the schema |
+| Qwen3 32B (Bedrock) | v2 | 0.94 | 0.94 | 0.94 | 50 |
+| gpt-oss-120b (Bedrock) | v2 | 1.00 | 1.00 | 1.00 | 49 (after two retries) |
+| Claude | v2 | pending | | | needs an API key |
+
+Pilot run 2026-11-12 on AWS credits (Claude is not offered to FREE-plan AWS accounts).
+Total pilot spend: $0.10 for 200 responses, per `mart_llm_usage`.
+
+Prompt v1 let models infer: OpenAI news got `gpt`, Anthropic news got `claude`. v2 adds
+explicit rules (a lab does not imply its models, a product does not imply its family, a model
+name does), which fixed most of it. gpt-oss-120b ignores the forced tool call on about one
+answer in four; those are rejected by the schema check and asked again on the next run.
+
+On 10 arXiv papers, gpt-oss-120b's digests were accurate; Qwen3 32B tagged technologies the
+papers are not about (DSPy and diffusion models on a medical segmentation paper). For a full
+run, gpt-oss-120b is the pick for both tasks.
 
 The rules' misses on this sample are the expected ones: "Sponsored Agents" and "OpenAI
 agents" are not caught by the `agents` aliases, "Opus" is not recognised as Claude, and
