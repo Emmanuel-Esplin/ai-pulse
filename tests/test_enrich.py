@@ -38,10 +38,11 @@ def test_hn_items_respect_points_and_include_comments(data_dir):
 def test_item_key_changes_with_text_and_task_version():
     task = tasks.hn_task()
     item = llm.Item("1", "Title: a")
-    assert item.key(task) != llm.Item("1", "Title: b").key(task)
+    assert item.key(task, "m") != llm.Item("1", "Title: b").key(task, "m")
+    assert item.key(task, "m") != item.key(task, "other-model")
     newer = llm.Task(task.name, "v2", task.system, task.schema)
-    assert item.key(task) != item.key(newer)
-    assert len(item.key(task)) <= 64
+    assert item.key(task, "m") != item.key(newer, "m")
+    assert len(item.key(task, "m")) <= 64
 
 
 def test_dry_run_sends_nothing(data_dir, capsys):

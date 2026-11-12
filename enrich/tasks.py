@@ -70,6 +70,14 @@ For an AI technology not in the list, use "other" and give its name as written.
 Ignore technologies that are not about AI (programming languages, databases, cloud
 providers) unless they are used for AI in this post.
 
+Only name what the post itself refers to; never infer:
+- A lab does not imply its models: news about OpenAI is openai, not gpt or chatgpt, unless
+  the post names the model or product.
+- A product does not imply its model family: Claude Code is claude_code, not claude;
+  ChatGPT is chatgpt, not gpt.
+- A model name does imply its family: Opus or Sonnet is claude, o3 or GPT-5 is gpt.
+- Vague descriptions ("a search database", "AI tools") are not a technology.
+
 For each, give the sentiment the post expresses towards that technology: positive,
 negative, neutral (news or a plain mention) or mixed. Judge the author and, when comments
 are included, the discussion; not the technology's general reputation.
@@ -95,7 +103,8 @@ Technologies:
         "required": ["mentions"],
         "additionalProperties": False,
     }
-    return Task("hn_technologies", "v1", system, schema, expected_output_tokens=300)
+    # v2: explicit rules against inferring models from labs and families from products.
+    return Task("hn_technologies", "v2", system, schema, expected_output_tokens=300)
 
 
 def arxiv_task() -> Task:
@@ -164,12 +173,15 @@ def hn_text(story: dict, comments: list[dict]) -> str:
     return "\n".join(parts)
 
 
-def hn_items(min_points: int) -> list[Item]:
-    """Stories with at least `min_points`, newest first, with their top comments if known."""
+def hn_items(min_points: int, story_ids: set[str] | None = None) -> list[Item]:
+    """Stories with at least `min_points` (or just `story_ids`), newest first, with their top
+    comments if known."""
     comments: dict[int, list[dict]] = {}
     for c in sorted(_read("hackernews", "comments"), key=lambda c: c["position"]):
         comments.setdefault(c["story_id"], []).append(c)
     stories = [s for s in _read("hackernews", "stories") if (s["points"] or 0) >= min_points]
+    if story_ids is not None:
+        stories = [s for s in stories if str(s["story_id"]) in story_ids]
     stories.sort(key=lambda s: s["created_at"], reverse=True)
     return [Item(str(s["story_id"]), hn_text(s, comments.get(s["story_id"], []))) for s in stories]
 

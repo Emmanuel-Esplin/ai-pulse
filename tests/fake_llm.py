@@ -32,6 +32,7 @@ HN_RULES = {
 @dataclass
 class FakeLLMClient:
     model: str = "fake-model"
+    provider: str = "fake"
     refuse: set[str] = field(default_factory=set)  # doc_ids to refuse
     finish_after: int = 0  # how many collect() calls report "still running"
     batches: dict[str, tuple[Task, list[Item]]] = field(default_factory=dict)
@@ -52,7 +53,7 @@ class FakeLLMClient:
 
     def _answer(self, task: Task, item: Item) -> Response:
         response = Response(
-            key=item.key(task),
+            key=item.key(task, self.model),
             doc_id="",
             status="succeeded",
             model=self.model,

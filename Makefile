@@ -69,8 +69,9 @@ enrich:
 enrich-collect:
 	$(PYTHON) -m enrich.run collect
 
-# Precision and recall of rules and Claude against eval/hn_labels.csv. Run `make gold` first.
+# Precision and recall of rules and the LLM against eval/hn_labels.csv. Run `make gold` first;
+# MODEL=<id> scores one model's answers to the current prompt.
 eval:
-	$(PYTHON) -m enrich.evaluate
+	$(PYTHON) -m enrich.evaluate $(if $(MODEL),--model $(MODEL))
 
 all: lint test

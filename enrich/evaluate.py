@@ -8,6 +8,7 @@ Micro-averaged: every (story, technology) pair counts once.
 
 from __future__ import annotations
 
+import argparse
 import csv
 import sys
 from pathlib import Path
@@ -44,7 +45,30 @@ def _predictions(con: duckdb.DuckDBPyConnection, model: str) -> dict[str, set[st
     return found
 
 
-def main() -> None:
+def _model_predictions(model: str) -> tuple[set[str], dict[str, set[str]]]:
+    """One model's answers straight from bronze: (answered stories, mentions). Gold keeps only
+    the latest answer per story, which mixes models after a second pilot."""
+    from enrich import llm, tasks
+    from processing import llm as llm_silver
+
+    task = tasks.hn_task()
+    rows = [
+        {**r, "task_version": v, "observed_at": t}
+        for v, t, r in llm.iter_responses(task.name)
+        if r["model"] == model and v == task.version
+    ]
+    answers = llm_silver._answers(rows)
+    found: dict[str, set[str]] = {a["doc_id"]: set() for a in answers}
+    for m in llm_silver.hn_mentions(answers):
+        if m["technology_id"] != "other":
+            found[str(m["story_id"])].add(m["technology_id"])
+    return set(found), found
+
+
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--model", help="score only this model's answers to the current prompt")
+    args = parser.parse_args(argv)
     labels = load_labels()
     warehouse = Path(landing.store().path("gold", "warehouse.duckdb"))
     with duckdb.connect(str(warehouse), read_only=True) as con:
@@ -57,6 +81,9 @@ def main() -> None:
         }
         rules = _predictions(con, "int_hn_story_technologies")
         llm = _predictions(con, "int_hn_story_technologies_llm")
+    if args.model:
+        answered, llm = _model_predictions(args.model)
+        print(f"Model: {args.model}")
     covered = {s: e for s, e in labels.items() if s in answered}
     if not covered:
         sys.exit(f"None of the {len(labels)} labelled stories has an LLM answer yet.")

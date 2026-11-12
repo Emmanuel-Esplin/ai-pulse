@@ -23,6 +23,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.6"]
+# Bedrock enrichment only; kept out of requirements.lock like the other cloud extras.
+aws = ["boto3>=1.35", "botocore[crt]"]  # crt: credentials from `aws login`
 
 [tool.setuptools.packages.find]
 include = ["ingestion*", "processing*", "enrich*"]

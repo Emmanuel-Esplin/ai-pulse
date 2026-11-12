@@ -5,7 +5,8 @@ append-only like every other API's; processing/llm.py parses them into silver ta
 Bronze doubles as the cache: an item whose (task version, document, text) already has a
 successful response is never sent again, so re-runs and rebuilds cost nothing.
 
-`LLMClient` is the seam for providers: `AnthropicBatchClient` today, Bedrock later.
+`LLMClient` is the seam for providers: `AnthropicBatchClient` (Claude API, batches) and
+enrich.bedrock.BedrockConverseClient (Amazon Bedrock, on demand).
 """
 
 from __future__ import annotations
@@ -28,13 +29,16 @@ DEFAULT_MODEL = "claude-opus-5-5"
 # batch can lose; the API allows 100,000 requests per batch.
 BATCH_CHUNK = 5000
 
-# USD per million tokens at standard rates: (input, output, cache read). Batches are half.
+# USD per million tokens: (input, output, cache read, multiplier). Claude runs through the
+# Message Batches API at half price; Bedrock runs on demand (eu-west-1 list prices).
 PRICES = {
-    "claude-opus-5-5": (4.00, 20.00, 0.20),
-    "claude-sonnet-5-5": (2.00, 10.00, 0.10),
-    "claude-haiku-5-5": (0.10, 0.50, 0.01),
+    "claude-opus-5-5": (4.00, 20.00, 0.20, 0.5),
+    "claude-sonnet-5-5": (2.00, 10.00, 0.10, 0.5),
+    "claude-haiku-5-5": (0.10, 0.50, 0.01, 0.5),
+    "qwen.qwen3-32b-v1:0": (0.18, 0.70, 0.18, 1.0),
+    "openai.gpt-oss-120b-1:0": (0.18, 0.70, 0.18, 1.0),
+    "eu.amazon.nova-2-lite-v1:0": (0.374, 3.157, 0.085, 1.0),
 }
-BATCH_DISCOUNT = 0.5
 
 log = logging.getLogger(__name__)
 
@@ -59,13 +63,15 @@ class Task:
 
 @dataclass(frozen=True)
 class Item:
-    """One document to enrich. The key changes when either the id or the text does."""
+    """One document to enrich. The key changes with the task version, the model, the id and
+    the text, so switching model or prompt asks again while a re-run asks nothing."""
 
     doc_id: str
     text: str
 
-    def key(self, task: Task) -> str:
-        digest = hashlib.sha256(f"{task.name}\0{task.version}\0{self.doc_id}\0{self.text}".encode())
+    def key(self, task: Task, model: str) -> str:
+        parts = (task.name, task.version, model, self.doc_id, self.text)
+        digest = hashlib.sha256("\0".join(parts).encode())
         return digest.hexdigest()[:40]  # custom_id allows 64 characters
 
 
@@ -87,6 +93,7 @@ class Response:
 
 class LLMClient(Protocol):
     model: str
+    provider: str
 
     def submit(self, task: Task, items: list[Item]) -> str:
         """Send items for processing; returns a batch id."""
@@ -101,6 +108,7 @@ class AnthropicBatchClient:
 
     model: str = DEFAULT_MODEL
     sdk: Any = field(default=None, repr=False)
+    provider: str = "anthropic"
 
     def __post_init__(self) -> None:
         if self.sdk is None:
@@ -127,7 +135,7 @@ class AnthropicBatchClient:
         from anthropic.types.messages.batch_create_params import Request
 
         requests = [
-            Request(custom_id=item.key(task), params=self.request_params(task, item))
+            Request(custom_id=item.key(task, self.model), params=self.request_params(task, item))
             for item in items
         ]
         batch = self.sdk.messages.batches.create(requests=requests)
@@ -215,29 +223,34 @@ def _pending() -> list[dict[str, Any]]:
     return [json.loads(store.read_bytes(p)) for p in store.list_files(folder, ".json")]
 
 
-def to_send(task: Task, items: list[Item]) -> list[Item]:
+def to_send(task: Task, items: list[Item], model: str) -> list[Item]:
     """Items with no successful answer yet and not already in a running batch."""
     skip = answered_keys(task) | pending_keys(task)
-    return [i for i in items if i.key(task) not in skip]
+    return [i for i in items if i.key(task, model) not in skip]
 
 
 def submit(client: LLMClient, task: Task, items: list[Item]) -> list[str]:
     """Submit items in chunks, recording each batch as pending before anything else can fail."""
     batch_ids = []
-    for start in range(0, len(items), BATCH_CHUNK):
-        chunk = items[start : start + BATCH_CHUNK]
+    size = getattr(client, "chunk_size", BATCH_CHUNK)
+    for start in range(0, len(items), size):
+        chunk = items[start : start + size]
         batch_id = client.submit(task, chunk)
         record = {
             "batch_id": batch_id,
             "task": task.name,
             "version": task.version,
+            "provider": client.provider,
             "model": client.model,
             "submitted_at": datetime.now(UTC).isoformat(timespec="seconds"),
-            "doc_ids": {item.key(task): item.doc_id for item in chunk},
+            "doc_ids": {item.key(task, client.model): item.doc_id for item in chunk},
         }
         landing.store().write_bytes(_pending_path(batch_id), json.dumps(record).encode())
         log.info("submitted %s batch %s: %d items", task.name, batch_id, len(chunk))
         batch_ids.append(batch_id)
+        # A synchronous client already holds the answers: write them now, not at the end.
+        if getattr(client, "synchronous", False):
+            collect(client, {task.name: task})
     return batch_ids
 
 
@@ -245,11 +258,20 @@ def collect(client: LLMClient, tasks: dict[str, Task]) -> int:
     """Write every finished pending batch to bronze; returns how many are still running."""
     running = 0
     for pending in _pending():
+        # Each provider only knows its own batches.
+        if pending.get("provider", "anthropic") != client.provider:
+            continue
         task = tasks.get(pending["task"])
         if task is None or task.version != pending["version"]:
             log.warning("pending batch %s is for an unknown task version", pending["batch_id"])
             continue
         responses = client.collect(pending["batch_id"])
+        if responses is None and getattr(client, "synchronous", False):
+            # Answered in a process that died before writing them: drop the record so the
+            # items are sent again.
+            log.warning("lost synchronous batch %s; its items will be resent", pending["batch_id"])
+            landing.store().fs.delete_file(_pending_path(pending["batch_id"]))
+            continue
         if responses is None:
             running += 1
             continue
@@ -257,7 +279,7 @@ def collect(client: LLMClient, tasks: dict[str, Task]) -> int:
             response.doc_id = pending["doc_ids"].get(response.key, "")
         payload = [asdict(r) for r in responses]
         landing.write_bronze(
-            responses_path(task, pending["batch_id"]), payload, "anthropic:batches"
+            responses_path(task, pending["batch_id"]), payload, f"{client.provider}:{client.model}"
         )
         landing.store().fs.delete_file(_pending_path(pending["batch_id"]))
         counts: dict[str, int] = {}
@@ -282,14 +304,14 @@ def estimate_tokens(text: str) -> int:
 
 
 def estimate_cost(task: Task, items: list[Item], model: str) -> dict[str, float]:
-    """Expected batch cost in USD, assuming the system prompt is read from cache."""
-    price_in, price_out, price_cache = PRICES.get(model, PRICES[DEFAULT_MODEL])
+    """Expected cost in USD, assuming the system prompt is read from cache where supported."""
+    price_in, price_out, price_cache, multiplier = PRICES.get(model, PRICES[DEFAULT_MODEL])
     input_tokens = sum(estimate_tokens(i.text) for i in items)
     cached_tokens = estimate_tokens(task.system) * len(items)
     output_tokens = task.expected_output_tokens * len(items)
     usd = (
         (input_tokens * price_in + cached_tokens * price_cache + output_tokens * price_out)
-        * BATCH_DISCOUNT
+        * multiplier
         / 1e6
     )
     return {
