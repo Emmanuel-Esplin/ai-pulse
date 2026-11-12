@@ -12,6 +12,8 @@ dependencies = [
   "tenacity>=9",
   # Hardened XML parsing for the arXiv Atom feed.
   "defusedxml>=0.7",
+  # Claude for enrichment; 2.x is the current major.
+  "anthropic>=2.8,<3",
   "pyarrow>=15",
   # DuckDB 2.0.0 returned wrong results after a bulk insert in nyc-taxi-pipeline.
   "duckdb>=1.1,<2",
@@ -21,6 +23,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.6"]
+# Bedrock enrichment only; kept out of requirements.lock like the other cloud extras.
+aws = ["boto3>=1.35", "botocore[crt]"]  # crt: credentials from `aws login`
 
 [tool.setuptools.packages.find]
 include = ["ingestion*", "processing*", "enrich*"]

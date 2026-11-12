@@ -16,6 +16,9 @@ make test      # pytest; never calls live APIs (httpx.MockTransport), builds dbt
 make ingest    # APIs -> bronze
 make silver    # bronze -> silver (rebuilt from all of bronze)
 make gold      # silver, then dbt build on DuckDB -> data/gold/warehouse.duckdb
+make enrich-plan  # dry run of Claude enrichment: item counts and estimated cost, sends nothing
+make enrich TARGET=hn LIMIT=500  # BILLED: ask the user first
+make eval      # rules and Claude scored against eval/hn_labels.csv
 ```
 
 ## Rules

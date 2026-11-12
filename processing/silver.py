@@ -57,11 +57,11 @@ def write_table(source: str, table: str, rows: list[Row], schema: pa.Schema) -> 
 
 def main(argv: list[str] | None = None) -> None:
     # Imported here: the source modules import this one for the shared helpers.
-    from processing import arxiv, hackernews, huggingface
+    from processing import arxiv, hackernews, huggingface, llm
 
     argparse.ArgumentParser(description=__doc__).parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
-    for module in (hackernews, huggingface, arxiv):
+    for module in (hackernews, huggingface, arxiv, llm):
         for table, rows in module.build().items():
             write_table(module.SOURCE, table, rows, module.SCHEMAS[table])
 

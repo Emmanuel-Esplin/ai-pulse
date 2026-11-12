@@ -1,0 +1,7 @@
+model,input_usd_per_mtok,output_usd_per_mtok,cache_read_usd_per_mtok,cache_write_usd_per_mtok,billed_fraction
+claude-opus-5-5,4.00,20.00,0.20,5.00,0.5
+claude-sonnet-5-5,2.00,10.00,0.10,2.50,0.5
+claude-haiku-5-5,0.10,0.50,0.01,0.125,0.5
+qwen.qwen3-32b-v1:0,0.18,0.70,0.18,0.18,1.0
+openai.gpt-oss-120b-1:0,0.18,0.70,0.18,0.18,1.0
+eu.amazon.nova-2-lite-v1:0,0.374,3.157,0.085,0.0,1.0
